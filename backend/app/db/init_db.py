@@ -5,6 +5,7 @@ Creates tables and seeds initial data
 from sqlalchemy.exc import IntegrityError
 from app.db.database import engine, SessionLocal, Base
 from app.db.models import User, Permission
+from app.scripts.script_registry import register_scripts
 
 
 def init_db():
@@ -82,6 +83,9 @@ def init_db():
                 continue
         
         print("Database initialized successfully with seed data")
+        
+        # Register scripts
+        register_scripts(db)
         
     except Exception as e:
         print(f"Error initializing database: {e}")
