@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
+    # Database
+    DATABASE_URL: str = "postgresql://zeus:zeus_password@localhost:5432/zeus_db"
+    
     # Celery
     CELERY_BROKER_URL: str = "redis://redis:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://redis:6379/0"

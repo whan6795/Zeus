@@ -1,10 +1,15 @@
 from fastapi import Depends, HTTPException, status
+from sqlalchemy.orm import Session
 from app.core.security import oauth2_scheme, decode_access_token
 from app.models.user import get_user, User
+from app.db.database import get_db
 from typing import List
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+async def get_current_user(
+    token: str = Depends(oauth2_scheme),
+    db: Session = Depends(get_db)
+) -> User:
     """Get current authenticated user"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -20,7 +25,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     if username is None:
         raise credentials_exception
     
-    user = get_user(username)
+    user = get_user(db, username)
     if user is None:
         raise credentials_exception
     
