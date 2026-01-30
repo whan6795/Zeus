@@ -5,6 +5,7 @@ const API_BASE_URL = 'http://localhost:8000/api/v1';
 let authToken = null;
 let currentUser = null;
 let taskPollingIntervals = {};
+let moduleData = null;
 
 // DOM Elements
 const loginPage = document.getElementById('login-page');
@@ -32,24 +33,6 @@ function setupEventListeners() {
     
     // Logout button
     logoutBtn.addEventListener('click', handleLogout);
-    
-    // Tab buttons
-    const tabButtons = document.querySelectorAll('.tab-button');
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const tabId = button.getAttribute('data-tab');
-            switchTab(tabId);
-        });
-    });
-    
-    // Execute buttons
-    const executeButtons = document.querySelectorAll('.execute-btn');
-    executeButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const module = button.getAttribute('data-module');
-            executeModule(module);
-        });
-    });
 }
 
 async function handleLogin(e) {
@@ -81,6 +64,7 @@ async function handleLogin(e) {
         localStorage.setItem('authToken', authToken);
         
         await loadUserInfo();
+        await loadModulesAndScripts();
         showMainPage();
     } catch (error) {
         loginError.textContent = error.message;
@@ -90,6 +74,7 @@ async function handleLogin(e) {
 function handleLogout() {
     authToken = null;
     currentUser = null;
+    moduleData = null;
     localStorage.removeItem('authToken');
     
     // Clear all polling intervals
@@ -104,6 +89,7 @@ function handleLogout() {
 async function verifyTokenAndShowMainPage() {
     try {
         await loadUserInfo();
+        await loadModulesAndScripts();
         showMainPage();
     } catch (error) {
         handleLogout();
@@ -123,34 +109,107 @@ async function loadUserInfo() {
     
     currentUser = await response.json();
     currentUsernameSpan.textContent = `用户: ${currentUser.username}`;
-    
-    // Update UI based on permissions
-    updateUIBasedOnPermissions();
 }
 
-function updateUIBasedOnPermissions() {
-    const tabButtons = document.querySelectorAll('.tab-button');
-    const tabContents = document.querySelectorAll('.tab-content');
-    
-    // Hide tabs without permission
-    tabButtons.forEach((button, index) => {
-        const module = button.getAttribute('data-tab');
-        const hasPermission = currentUser.permissions.includes(module);
-        
-        if (!hasPermission) {
-            button.style.display = 'none';
-            tabContents[index].style.display = 'none';
+async function loadModulesAndScripts() {
+    const response = await fetch(`${API_BASE_URL}/modules/list`, {
+        headers: {
+            'Authorization': `Bearer ${authToken}`
         }
     });
     
-    // Show first available tab
-    const firstAvailableTab = Array.from(tabButtons).find(btn => 
-        currentUser.permissions.includes(btn.getAttribute('data-tab'))
-    );
-    
-    if (firstAvailableTab) {
-        switchTab(firstAvailableTab.getAttribute('data-tab'));
+    if (!response.ok) {
+        throw new Error('Failed to load modules');
     }
+    
+    const data = await response.json();
+    moduleData = data.modules;
+    
+    // Render the UI
+    renderModuleTabs();
+    renderModuleContents();
+}
+
+function renderModuleTabs() {
+    const tabsContainer = document.querySelector('.tabs');
+    tabsContainer.innerHTML = '';
+    
+    moduleData.forEach((module, index) => {
+        const button = document.createElement('button');
+        button.className = 'tab-button' + (index === 0 ? ' active' : '');
+        button.setAttribute('data-tab', module.id);
+        button.textContent = module.name;
+        button.addEventListener('click', () => switchTab(module.id));
+        tabsContainer.appendChild(button);
+    });
+}
+
+function renderModuleContents() {
+    const container = document.querySelector('.container');
+    
+    // Remove old tab contents
+    const oldContents = container.querySelectorAll('.tab-content');
+    oldContents.forEach(content => content.remove());
+    
+    moduleData.forEach((module, index) => {
+        const tabContent = document.createElement('div');
+        tabContent.id = module.id;
+        tabContent.className = 'tab-content' + (index === 0 ? ' active' : '');
+        
+        const heading = document.createElement('h2');
+        heading.textContent = module.name;
+        tabContent.appendChild(heading);
+        
+        const description = document.createElement('p');
+        description.textContent = module.description;
+        tabContent.appendChild(description);
+        
+        // Create scripts section
+        const scriptsSection = document.createElement('div');
+        scriptsSection.className = 'scripts-section';
+        
+        const scriptsHeading = document.createElement('h3');
+        scriptsHeading.textContent = '可用脚本:';
+        scriptsSection.appendChild(scriptsHeading);
+        
+        // Create script cards
+        const scriptsGrid = document.createElement('div');
+        scriptsGrid.className = 'scripts-grid';
+        
+        module.scripts.forEach(script => {
+            const scriptCard = document.createElement('div');
+            scriptCard.className = 'script-card';
+            
+            const scriptName = document.createElement('h4');
+            scriptName.textContent = script.name;
+            scriptCard.appendChild(scriptName);
+            
+            const scriptDesc = document.createElement('p');
+            scriptDesc.textContent = script.description;
+            scriptCard.appendChild(scriptDesc);
+            
+            const executeBtn = document.createElement('button');
+            executeBtn.className = 'btn-primary execute-btn';
+            executeBtn.textContent = '执行';
+            executeBtn.setAttribute('data-module', module.id);
+            executeBtn.setAttribute('data-script', script.id);
+            executeBtn.addEventListener('click', () => executeScript(module.id, script.id));
+            scriptCard.appendChild(executeBtn);
+            
+            scriptsGrid.appendChild(scriptCard);
+        });
+        
+        scriptsSection.appendChild(scriptsGrid);
+        tabContent.appendChild(scriptsSection);
+        
+        // Task info area
+        const taskInfo = document.createElement('div');
+        taskInfo.className = 'task-info';
+        taskInfo.id = `${module.id}-info`;
+        tabContent.appendChild(taskInfo);
+        
+        container.appendChild(tabContent);
+    });
 }
 
 function showLoginPage() {
@@ -181,23 +240,23 @@ function switchTab(tabId) {
     });
 }
 
-async function executeModule(module) {
-    const button = document.querySelector(`[data-module="${module}"]`);
-    const infoDiv = document.getElementById(`${module}-info`);
+async function executeScript(moduleName, scriptName) {
+    const infoDiv = document.getElementById(`${moduleName}-info`);
+    const button = document.querySelector(`[data-module="${moduleName}"][data-script="${scriptName}"]`);
     
     button.disabled = true;
     infoDiv.innerHTML = '<div class="status pending"><span class="loading"></span>正在提交任务...</div>';
     infoDiv.classList.add('visible');
     
     try {
-        const response = await fetch(`${API_BASE_URL}/modules/${module}/execute`, {
+        const response = await fetch(`${API_BASE_URL}/modules/execute?module_name=${moduleName}&script_name=${scriptName}`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${authToken}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                module_name: module,
+                module_name: moduleName,
                 parameters: {}
             })
         });
@@ -214,29 +273,31 @@ async function executeModule(module) {
             <h3>任务信息</h3>
             <div class="status pending">
                 <span class="loading"></span>
+                脚本: ${scriptName}<br>
                 任务ID: ${taskId}<br>
                 状态: 执行中...
             </div>
         `;
         
         // Start polling for task status
-        pollTaskStatus(module, taskId);
+        pollTaskStatus(moduleName, scriptName, taskId, button);
     } catch (error) {
         infoDiv.innerHTML = `<div class="status failed">错误: ${error.message}</div>`;
         button.disabled = false;
     }
 }
 
-function pollTaskStatus(module, taskId) {
-    // Clear existing interval for this module
-    if (taskPollingIntervals[module]) {
-        clearInterval(taskPollingIntervals[module]);
+function pollTaskStatus(moduleName, scriptName, taskId, button) {
+    const pollKey = `${moduleName}-${scriptName}`;
+    
+    // Clear existing interval for this script
+    if (taskPollingIntervals[pollKey]) {
+        clearInterval(taskPollingIntervals[pollKey]);
     }
     
-    const infoDiv = document.getElementById(`${module}-info`);
-    const button = document.querySelector(`[data-module="${module}"]`);
+    const infoDiv = document.getElementById(`${moduleName}-info`);
     
-    taskPollingIntervals[module] = setInterval(async () => {
+    taskPollingIntervals[pollKey] = setInterval(async () => {
         try {
             const response = await fetch(`${API_BASE_URL}/modules/tasks/${taskId}`, {
                 headers: {
@@ -251,10 +312,11 @@ function pollTaskStatus(module, taskId) {
             const taskStatus = await response.json();
             
             if (taskStatus.status === 'success') {
-                clearInterval(taskPollingIntervals[module]);
+                clearInterval(taskPollingIntervals[pollKey]);
                 infoDiv.innerHTML = `
                     <h3>任务完成</h3>
                     <div class="status success">
+                        脚本: ${scriptName}<br>
                         任务ID: ${taskId}<br>
                         状态: 成功完成
                     </div>
@@ -265,10 +327,11 @@ function pollTaskStatus(module, taskId) {
                 `;
                 button.disabled = false;
             } else if (taskStatus.status === 'failed') {
-                clearInterval(taskPollingIntervals[module]);
+                clearInterval(taskPollingIntervals[pollKey]);
                 infoDiv.innerHTML = `
                     <h3>任务失败</h3>
                     <div class="status failed">
+                        脚本: ${scriptName}<br>
                         任务ID: ${taskId}<br>
                         状态: 失败<br>
                         错误: ${taskStatus.error}
@@ -281,13 +344,14 @@ function pollTaskStatus(module, taskId) {
                     <h3>任务信息</h3>
                     <div class="status pending">
                         <span class="loading"></span>
+                        脚本: ${scriptName}<br>
                         任务ID: ${taskId}<br>
                         状态: ${taskStatus.status}
                     </div>
                 `;
             }
         } catch (error) {
-            clearInterval(taskPollingIntervals[module]);
+            clearInterval(taskPollingIntervals[pollKey]);
             infoDiv.innerHTML += `<div class="status failed">轮询错误: ${error.message}</div>`;
             button.disabled = false;
         }
