@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zeus Medical Data Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="login-page" class="page active">
+        <div class="login-container">
+            <h1>Zeus Medical Data Platform</h1>
+            <div class="login-box">
+                <h2>用户登录</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="username">用户名:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn-primary">登录</button>
+                    <div id="login-error" class="error-message"></div>
+                </form>
+                <div class="demo-users">
+                    <p><strong>测试账号:</strong></p>
+                    <p>admin / secret (全部权限)</p>
+                    <p>user1 / secret (模块1, 2)</p>
+                    <p>user2 / secret (模块3)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Page -->
+    <div id="main-page" class="page">
+        <div class="header">
+            <h1>Zeus Medical Data Platform</h1>
+            <div class="user-info">
+                <span id="current-username"></span>
+                <button id="logout-btn" class="btn-secondary">退出登录</button>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="tabs">
+                <button class="tab-button active" data-tab="module1">患者数据分析</button>
+                <button class="tab-button" data-tab="module2">医学影像处理</button>
+                <button class="tab-button" data-tab="module3">药物相互作用分析</button>
+            </div>
+
+            <!-- Module 1 -->
+            <div id="module1" class="tab-content active">
+                <h2>患者数据分析</h2>
+                <p>分析患者数据并生成报告</p>
+                <div class="module-controls">
+                    <button class="btn-primary execute-btn" data-module="module1">执行分析</button>
+                </div>
+                <div class="task-info" id="module1-info"></div>
+            </div>
+
+            <!-- Module 2 -->
+            <div id="module2" class="tab-content">
+                <h2>医学影像处理</h2>
+                <p>处理和分析医学影像(X光、MRI、CT扫描)</p>
+                <div class="module-controls">
+                    <button class="btn-primary execute-btn" data-module="module2">执行处理</button>
+                </div>
+                <div class="task-info" id="module2-info"></div>
+            </div>
+
+            <!-- Module 3 -->
+            <div id="module3" class="tab-content">
+                <h2>药物相互作用分析</h2>
+                <p>分析药物相互作用并提供建议</p>
+                <div class="module-controls">
+                    <button class="btn-primary execute-btn" data-module="module3">执行分析</button>
+                </div>
+                <div class="task-info" id="module3-info"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
