@@ -243,6 +243,69 @@ python -m http.server 3000
 5. **监控面板**: 添加 Celery Flower 监控任务执行情况
 6. **日志系统**: 集成完整的日志记录和分析系统
 
+## 安全注意事项
+
+### 开发环境
+当前配置适用于开发环境，包含以下便利设置：
+- 预配置的测试账号
+- 硬编码的开发密钥
+- 启用代码热重载
+- 暴露的调试端口
+
+### 生产环境部署
+
+**必须进行以下更改才能安全地部署到生产环境：**
+
+1. **密钥管理**:
+   ```bash
+   # 生成强密钥
+   openssl rand -hex 32
+   
+   # 在 .env 文件中设置
+   SECRET_KEY=your-generated-key-here
+   ```
+
+2. **数据库**:
+   - 替换内存用户存储为真实数据库
+   - 为每个用户使用唯一的密码哈希
+   - 实施适当的用户管理
+
+3. **CORS 配置**:
+   ```bash
+   # 仅允许你的前端域名
+   BACKEND_CORS_ORIGINS=https://yourdomain.com
+   ```
+
+4. **Docker 配置**:
+   ```bash
+   # 使用生产配置启动
+   docker-compose -f docker-compose.prod.yml up -d
+   
+   # 移除开发卷挂载
+   # 禁用 uvicorn --reload
+   # 添加适当的日志配置
+   ```
+
+5. **HTTPS**:
+   - 在生产环境使用 HTTPS
+   - 配置 SSL/TLS 证书
+   - 考虑使用 Nginx 或 Traefik 作为反向代理
+
+6. **Token 存储**:
+   - 当前 JWT 存储在 localStorage（易受 XSS 攻击）
+   - 考虑使用 httpOnly cookies
+   - 实施适当的 CSP 策略
+
+7. **参数验证**:
+   - 为所有模块参数添加 Pydantic 验证
+   - 实施速率限制
+   - 添加输入消毒
+
+8. **监控和日志**:
+   - 配置集中日志记录
+   - 设置错误监控（如 Sentry）
+   - 实施健康检查端点
+
 ## 许可证
 
 MIT License
