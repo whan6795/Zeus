@@ -42,3 +42,18 @@ def require_permission(required_permission: str):
             )
         return current_user
     return permission_checker
+
+
+def require_script_permission(module_name: str, script_name: str):
+    """Dependency to check if user has required script permission"""
+    async def script_permission_checker(current_user: User = Depends(get_current_user)) -> User:
+        script_key = f"{module_name}.{script_name}"
+        
+        # Check script-level permission
+        if script_key not in current_user.script_permissions:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Permission denied. Required script permission: {script_key}"
+            )
+        return current_user
+    return script_permission_checker
