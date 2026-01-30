@@ -5,10 +5,11 @@ from app.db import models
 
 class User:
     """User model adapter for compatibility with existing code"""
-    def __init__(self, username: str, hashed_password: str, permissions: List[str]):
+    def __init__(self, username: str, hashed_password: str, permissions: List[str], user_id: int = None):
         self.username = username
         self.hashed_password = hashed_password
         self.permissions = permissions
+        self.id = user_id
 
 
 def get_user(db: Session, username: str) -> User:
@@ -22,7 +23,8 @@ def get_user(db: Session, username: str) -> User:
     return User(
         username=db_user.username,
         hashed_password=db_user.hashed_password,
-        permissions=permissions
+        permissions=permissions,
+        user_id=db_user.id
     )
 
 
