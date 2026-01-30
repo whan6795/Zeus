@@ -108,7 +108,7 @@ async def get_task_status(
     return response
 
 
-@router.get("/modules/list")
+@router.get("/list")
 async def list_modules(current_user = Depends(get_current_user)):
     """
     List available modules based on user permissions

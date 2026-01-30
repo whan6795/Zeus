@@ -14,3 +14,6 @@ celery_app.conf.update(
     timezone='UTC',
     enable_utc=True,
 )
+
+# Import tasks to register them with Celery
+celery_app.conf.imports = ('app.core.tasks',)
